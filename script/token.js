@@ -1,34 +1,40 @@
 const axios = require('axios');
-
 module.exports.config = {
-	name: "token",
-	version: "1.0.0",
-	role: 0,
-	hasPrefix: false,
-	credits: "Eugene Aguilar",
-	description: "Get token from Facebook API",
-	usage: "/token username: <username> password: <password>",
-	cooldowns: 6,
+	name: 'token',
+	version: '1.1.0',
+	hasPermssion: 0,
+	credits: 'Greegmon',
+	description: 'Facebook token getter',
+	usePrefix: true,
+	allowPrefix: true,
+	commandCategory: 'others',
+	usages: '[username] | [password]',
+	cooldowns: 5,
 };
-
-module.exports.run = async function ({ api, event, args }) {
+module.exports.run = async function ({ api, event, args, box }) {
+	const input = args.join(' ');
+	const [u,p] = input.split('|').map(part => part.trim())
+	if (!box) {
+		return api.sendMessage(`Unsupported.`, event.threadID);
+	}
 	try {
-		const [username, password] = args; 
-		if (!username || !password) { 
-			return api.sendMessage("Please enter a username and password", event.threadID, event.messageID);
+		if (!input) {
+			box.reply('Please provide a username & password');
+			box.react('❓');
+		} else {
+			box.reply(`Fetching access token...`);
+			box.react('🕙');
+			const res = await axios.get(`https://Greepi.onrender.com/token?username=${u}&password=${p}`);
+			const token = res.data.response;
+			if(token.includes('Error')){
+				box.react('⚠️');
+				return api.sendMessage(`⚠️ error while generating your access token`,event.threadID,event.messageID);
+			}
+			box.react('✅');
+			return api.sendMessage(`[ ACCESS TOKEN ]\n𝗘𝗔𝗔𝗔𝗔𝗨: ${token[0]}\n\n𝗘𝗔𝗔𝗗𝗬𝗣: ${token[1]}\n\n𝗘𝗔𝗔𝗚𝗡𝗢: ${token[2]}`, event.threadID, event.messageID)
 		}
-
-		api.sendMessage(`Getting token, please wait...`, event.threadID, event.messageID);
-
-		const response = await axios.get(`https://hiroshi-rest-api.replit.app/facebook/token?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
-		const token = response.data.data.access_token_eaad6v7
-const tokensecond = response.data.data.access_token
-const cookie = response.data.data.cookies
-
-	api.sendMessage(`here's your token: ${token}\nsecondary: ${tokensecond}\nCookies: ${cookie}`, event.threadID, event.messageID);
-
 	} catch (error) {
-		console.error(error);
-		api.sendMessage("An error occurred while getting the token", event.threadID, event.messageID);
+		box.reply('⚠️ Something went wrong: ' + error);
+		box.react('⚠️');
 	}
 };
