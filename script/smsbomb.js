@@ -8,42 +8,47 @@ module.exports.config = {
 	role: 2,
 	description: "sms spammer",
 	aliases: [],
-	usage: "[prompt]",
+	usage: "[number] [amount] [delay]",
 	cooldown: 5,
 };
 
 module.exports.run = async function ({ event, args, api }) {
 	// Extract the parameters from args
 	const number = args[0];
-	const amount = args[1];
-	const delay = args[2];
+	const amount = parseInt(args[1], 10);
+	const delay = parseInt(args[2], 10);
 
-	if (!number || !amount || !delay) {
-		return event.reply("Please provide a number, amount, and delay.");
+	if (!number || isNaN(amount) || isNaN(delay)) {
+		return api.sendMessage("Please provide a valid number, amount, and delay.", event.threadID);
 	}
 
 	try {
-		event.reply("Processing your request...");
+		api.sendMessage("Processing your request...", event.threadID);
 
 		let successCount = 0;
 		for (let i = 0; i < amount; i++) {
-			const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
-				params: {
-					number: encodeURIComponent(number),
-					delay: encodeURIComponent(delay),
+			try {
+				const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
+					params: {
+						number: encodeURIComponent(number),
+						delay: encodeURIComponent(delay),
+					}
+				});
+				if (response.data.success) {
+					successCount++;
+					api.sendMessage(`${successCount} success sent`, event.threadID);
+				} else {
+					api.sendMessage(`Failed to send SMS ${i + 1}`, event.threadID);
 				}
-			});
-			if (response.data.success) {
-				successCount++;
-				event.reply(`${successCount} success sent`);
-			} else {
-				event.reply(`Failed to send SMS ${i + 1}`);
+			} catch (error) {
+				console.error(error.message);
+				api.sendMessage(`An error occurred while sending SMS ${i + 1}`, event.threadID);
 			}
 			await new Promise(resolve => setTimeout(resolve, delay));
 		}
-		event.reply("All requests processed.");
+		api.sendMessage("All requests processed.", event.threadID);
 	} catch (error) {
 		console.error(error.message);
-		event.reply("An error occurred while sending the request.");
+		api.sendMessage("An error occurred while sending the request.", event.threadID);
 	}
 };
